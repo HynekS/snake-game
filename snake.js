@@ -3,18 +3,24 @@ const draw = () => {
 
   if (myCanvas.getContext) {
     // GLOBAL VARIABLES
-    let ctx = myCanvas.getContext("2d");
+    const ctx = myCanvas.getContext("2d");
+    const HEIGHT = myCanvas.height;
+    const WIDTH = myCanvas.width;
+
     let tick;
     let currentApple;
     let currentInterval;
-    const HEIGHT = myCanvas.height;
-    const WIDTH = myCanvas.width;
 
     // CONFIG
     const config = {
       appleFill: "rgb(250, 0, 0)",
       snakeFill: "rgb(0, 0, 0)",
-      initialState: [{ x: 3, y: 9 }, { x: 2, y: 9 }, { x: 1, y: 9 }],
+      snakeInitialState: [
+        { x: 4, y: 9 },
+        { x: 3, y: 9 },
+        { x: 2, y: 9 },
+        { x: 1, y: 9 }
+      ],
       initialInterval: 200,
       controls: {
         left: ["ArrowLeft", 37],
@@ -26,21 +32,60 @@ const draw = () => {
       TILESIZE: 20
     };
 
-    const LIMIT_X = WIDTH / config.TILESIZE - 1;
-    const LIMIT_Y = HEIGHT / config.TILESIZE - 1;
+    const {
+      appleFill,
+      snakeFill,
+      snakeInitialState,
+      initialInterval,
+      controls,
+      startDirection,
+      TILESIZE
+    } = config;
+
+    const LIMIT_X = WIDTH / TILESIZE - 1;
+    const LIMIT_Y = HEIGHT / TILESIZE - 1;
 
     // HELPERS
     const getRandom = (min, max) => {
       return Math.floor(Math.random() * (max - min) + min);
     };
 
-    const drawRectangle = (posX, posY, dim = config.TILESIZE, fill) => {
+    const drawRectangle = (posX, posY, dim = TILESIZE, fill) => {
       ctx.fillStyle = fill;
-      ctx.fillRect(posX * config.TILESIZE, posY * config.TILESIZE, dim, dim);
+      ctx.fillRect(posX * TILESIZE, posY * TILESIZE, dim, dim);
     };
 
-    const clearRectangle = (posX, posY, dim = config.TILESIZE) => {
-      ctx.clearRect(posX * config.TILESIZE, posY * config.TILESIZE, dim, dim);
+    const clearRectangle = (posX, posY, dim = TILESIZE) => {
+      ctx.clearRect(posX * TILESIZE, posY * TILESIZE, dim, dim);
+    };
+
+    const playSound = (sound, volume = 0.1) => {
+      const audio = document.getElementById(sound);
+      if (audio) {
+        audio.volume = volume;
+        audio.currentTime = 0;
+        audio.play();
+      }
+    };
+
+    // CONTROLS
+    controlDirection = e => {
+      const { left, up, right, down } = controls;
+      key = e.key || e.keyIdentifier || e.keyCode;
+      switch (snake && true) {
+        case !!~left.indexOf(key) && snake.direction !== "RIGHT":
+          snake.setDirection("LEFT").moveSnake();
+          break;
+        case !!~up.indexOf(key) && snake.direction !== "DOWN":
+          snake.setDirection("UP").moveSnake();
+          break;
+        case !!~right.indexOf(key) && snake.direction !== "LEFT":
+          snake.setDirection("RIGHT").moveSnake();
+          break;
+        case !!~down.indexOf(key) && snake.direction !== "UP":
+          snake.setDirection("DOWN").moveSnake();
+          break;
+      }
     };
 
     // CONSTRUCTORS
@@ -57,10 +102,10 @@ const draw = () => {
       const getMatches = function() {
         let randX = getRandom(0, 20);
         let randY = getRandom(0, 20);
-        let matchX = snake.snakeBody.filter(item => item.topX == randX);
-        let matchY = snake.snakeBody.filter(item => item.topY == randY);
-
-        if (matchX.length && matchY.length) {
+        let match = snake.snakeBody.filter(
+          item => item.topX === randX && item.topY === randY
+        );
+        if (match.length) {
           return getMatches();
         }
         return [randX, randY];
@@ -69,62 +114,34 @@ const draw = () => {
     };
 
     Apple.prototype.drawApple = function() {
-      drawRectangle(this.topX, this.topY, config.TILESIZE, config.appleFill);
-    };
-
-    controlDirection = function(e) {
-      const { left, up, right, down } = config.controls;
-      key = e.key || e.keyIdentifier || e.keyCode;
-      switch (snake && true) {
-        case !!~left.indexOf(key) && snake.direction !== "RIGHT":
-          snake.setDirection("LEFT");
-          snake.moveSnake();
-          break;
-        case !!~up.indexOf(key) && snake.direction !== "DOWN":
-          snake.setDirection("UP");
-          snake.moveSnake();
-          break;
-        case !!~right.indexOf(key) && snake.direction !== "LEFT":
-          snake.setDirection("RIGHT");
-          snake.moveSnake();
-          break;
-        case !!~down.indexOf(key) && snake.direction !== "UP":
-          snake.setDirection("DOWN");
-          snake.moveSnake();
-          break;
-      }
+      drawRectangle(this.topX, this.topY, TILESIZE, appleFill);
     };
 
     const Snake = function() {
-      this.snakeBody = config.initialState.map(
-        item => new Tile(item.x, item.y)
-      );
-      this.direction = config.startDirection;
+      this.snakeBody = snakeInitialState.map(item => new Tile(item.x, item.y));
+      this.direction = startDirection;
 
       this.initSnake = function() {
         console.log("snake initialized!");
         window.addEventListener(
           "keydown",
           e => {
+            // bind this?
             controlDirection(e);
           },
           false
         );
         for (let item of this.snakeBody) {
-          drawRectangle(
-            item.topX,
-            item.topY,
-            config.TILESIZE,
-            config.snakeFill
-          );
+          drawRectangle(item.topX, item.topY, TILESIZE, snakeFill);
         }
-        this.createApple();
-        currentInterval = config.initialInterval;
+        spawnApple();
+        currentInterval = initialInterval;
         tick = setInterval(this.moveSnake.bind(this), currentInterval);
       };
 
       this.setDirection = function(direction) {
         this.direction = direction;
+        return this;
       };
 
       this.moveSnake = function() {
@@ -148,54 +165,46 @@ const draw = () => {
 
       this.redrawSnake = function(x, y) {
         const tileToAdd = new Tile(x, y);
-
-        // DETECT COLLISIONS. TODO refactor to avoid unneccessary checks
-        let match = this.snakeBody.filter(
-          item => item.topX === tileToAdd.topX && item.topY === tileToAdd.topY
+        const isCollision = detectCollision(
+          tileToAdd.topX,
+          tileToAdd.topY,
+          this
         );
-        if (
-          tileToAdd.topX < 0 ||
-          tileToAdd.topY < 0 ||
-          tileToAdd.topX > LIMIT_X ||
-          tileToAdd.topY > LIMIT_Y ||
-          match.length
-        ) {
-          alert("GAME OVER, YOU SUCKER!");
+        if (isCollision) {
+          playSound("snake_crash");
           clearInterval(tick);
-          // To do: reset everything
+          //alert("GAME OVER, YOU SUCKER!");
         } else {
           this.snakeBody.unshift(tileToAdd);
-          drawRectangle(
-            tileToAdd.topX,
-            tileToAdd.topY,
-            config.TILESIZE,
-            config.snakeFill
-          );
+          drawRectangle(tileToAdd.topX, tileToAdd.topY, TILESIZE, snakeFill);
           if (
             tileToAdd.topX === currentApple.topX &&
             tileToAdd.topY === currentApple.topY
           ) {
-            console.warn("apple was eaten! Yummy!");
+            playSound("snake_apple-eaten");
             currentInterval -= (currentInterval / 100) * 3;
-            this.createApple();
+            spawnApple();
           } else {
             const tileToRemove = this.snakeBody.pop();
-            clearRectangle(
-              tileToRemove.topX,
-              tileToRemove.topY,
-              config.TILESIZE
-            );
+            clearRectangle(tileToRemove.topX, tileToRemove.topY, TILESIZE);
           }
         }
       };
+    };
 
-      this.createApple = function() {
-        currentApple = null;
-        currentApple = new Apple();
-        currentApple.drawApple();
-      };
+    this.spawnApple = function() {
+      currentApple = null;
+      currentApple = new Apple();
+      currentApple.drawApple();
+    };
 
-      this.detectCollision = function() {};
+    this.detectCollision = function(x, y, context) {
+      let match = context.snakeBody.filter(
+        item => item.topX === x && item.topY === y
+      );
+      if (x < 0 || y < 0 || x > LIMIT_X || y > LIMIT_Y || match.length) {
+        return true;
+      }
     };
 
     const snake = new Snake();
@@ -204,3 +213,12 @@ const draw = () => {
 };
 
 window.addEventListener("load", () => draw(), false);
+
+// Attempt to make one function for all match / collision detection (not tested yet):
+//
+// const isMatch = (candidate, current) => {
+//   let { topX: x, topY: y } = candidate;
+//   if(!Array.isArray(current)) current = [...current];
+//   let match = current.filter(item => item.topX === x && item.topY === y);
+//   return !!match.length;
+// }

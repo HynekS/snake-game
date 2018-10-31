@@ -9,11 +9,13 @@
     <style>
         body {
             all: unset;
-            background-color:midnightblue;
+            background-color:darkslategray;
         }
         canvas {
             background-color:antiquewhite;
-            transform: translateY(50%);
+            position: relative;
+            top: 45%;
+            transform: translateY(-50%);
         }
         .container {
             height: 100vh;
@@ -22,6 +24,8 @@
     </style>
 </head>
 <body>
+    <audio id="snake_apple-eaten" src="sounds/sfx_sounds_powerup6.wav"></audio>
+    <audio id="snake_crash" src="sounds/sfx_exp_cluster5.wav"></audio>
     <div class="container">
         <canvas id="myCanvas" height="400px" width="400px"></canvas>
     </div>
