@@ -44,10 +44,24 @@ const draw = () => {
 
     const LIMIT_X = WIDTH / TILESIZE - 1;
     const LIMIT_Y = HEIGHT / TILESIZE - 1;
+    const GRIDSIZE_X = WIDTH / TILESIZE;
+    const GRIDSIZE_Y = HEIGHT / TILESIZE;
 
     // HELPERS
     const getRandom = (min, max) => {
       return Math.floor(Math.random() * (max - min) + min);
+    };
+    // "candidate input is very hairy and needs to be refactored (in 2 of 3 cases they are actually separate coords, not an object.)"
+    const isMatch = (candidate, current) => {
+      let { posX: x, posY: y } = candidate;
+      console.log(x, y);
+      if (Array.isArray(current)) {
+        let match = current.filter(item => item.posX === x && item.posY === y);
+        return !!match.length;
+      } else {
+        // currentApple is not an array
+        return x === current.posX && y === current.posY;
+      }
     };
 
     const drawRectangle = (posX, posY, dim = TILESIZE, fill) => {
@@ -89,23 +103,20 @@ const draw = () => {
     };
 
     // CONSTRUCTORS
-    const Tile = function(topX, topY) {
-      this.topX = topX;
-      this.topY = topY;
+    const Tile = function(posX, posY) {
+      this.posX = posX;
+      this.posY = posY;
     };
 
     const Apple = function() {
-      [this.topX, this.topY] = this.getFreeCoords();
+      [this.posX, this.posY] = this.getFreeCoords();
     };
 
     Apple.prototype.getFreeCoords = function() {
       const getMatches = function() {
-        let randX = getRandom(0, 20);
-        let randY = getRandom(0, 20);
-        let match = snake.snakeBody.filter(
-          item => item.topX === randX && item.topY === randY
-        );
-        if (match.length) {
+        let randX = getRandom(0, GRIDSIZE_X);
+        let randY = getRandom(0, GRIDSIZE_Y);
+        if (isMatch({ posX: randX, posY: randY }, snake.snakeBody)) {
           return getMatches();
         }
         return [randX, randY];
@@ -114,7 +125,7 @@ const draw = () => {
     };
 
     Apple.prototype.drawApple = function() {
-      drawRectangle(this.topX, this.topY, TILESIZE, appleFill);
+      drawRectangle(this.posX, this.posY, TILESIZE, appleFill);
     };
 
     const Snake = function() {
@@ -132,7 +143,7 @@ const draw = () => {
           false
         );
         for (let item of this.snakeBody) {
-          drawRectangle(item.topX, item.topY, TILESIZE, snakeFill);
+          drawRectangle(item.posX, item.posY, TILESIZE, snakeFill);
         }
         spawnApple();
         currentInterval = initialInterval;
@@ -145,7 +156,7 @@ const draw = () => {
       };
 
       this.moveSnake = function() {
-        let { topX: newX, topY: newY } = this.snakeBody[0];
+        let { posX: newX, posY: newY } = this.snakeBody[0];
         switch (this.direction) {
           case "LEFT":
             newX -= 1;
@@ -166,27 +177,25 @@ const draw = () => {
       this.redrawSnake = function(x, y) {
         const tileToAdd = new Tile(x, y);
         const isCollision = detectCollision(
-          tileToAdd.topX,
-          tileToAdd.topY,
+          tileToAdd.posX,
+          tileToAdd.posY,
           this
         );
         if (isCollision) {
+          // snake does crash to itself or to edges of canvas
           playSound("snake_crash");
           clearInterval(tick);
-          //alert("GAME OVER, YOU SUCKER!");
         } else {
           this.snakeBody.unshift(tileToAdd);
-          drawRectangle(tileToAdd.topX, tileToAdd.topY, TILESIZE, snakeFill);
-          if (
-            tileToAdd.topX === currentApple.topX &&
-            tileToAdd.topY === currentApple.topY
-          ) {
+          drawRectangle(tileToAdd.posX, tileToAdd.posY, TILESIZE, snakeFill);
+          if (isMatch(tileToAdd, currentApple)) {
+            // snake eats an apple
             playSound("snake_apple-eaten");
             currentInterval -= (currentInterval / 100) * 3;
             spawnApple();
           } else {
             const tileToRemove = this.snakeBody.pop();
-            clearRectangle(tileToRemove.topX, tileToRemove.topY, TILESIZE);
+            clearRectangle(tileToRemove.posX, tileToRemove.posY, TILESIZE);
           }
         }
       };
@@ -199,10 +208,14 @@ const draw = () => {
     };
 
     this.detectCollision = function(x, y, context) {
-      let match = context.snakeBody.filter(
-        item => item.topX === x && item.topY === y
-      );
-      if (x < 0 || y < 0 || x > LIMIT_X || y > LIMIT_Y || match.length) {
+      // console.log({ x, y, context });
+      if (
+        x < 0 ||
+        y < 0 ||
+        x > LIMIT_X ||
+        y > LIMIT_Y ||
+        isMatch({ posX: x, posY: y }, context.snakeBody)
+      ) {
         return true;
       }
     };
@@ -213,12 +226,3 @@ const draw = () => {
 };
 
 window.addEventListener("load", () => draw(), false);
-
-// Attempt to make one function for all match / collision detection (not tested yet):
-//
-// const isMatch = (candidate, current) => {
-//   let { topX: x, topY: y } = candidate;
-//   if(!Array.isArray(current)) current = [...current];
-//   let match = current.filter(item => item.topX === x && item.topY === y);
-//   return !!match.length;
-// }
