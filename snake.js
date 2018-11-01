@@ -23,10 +23,10 @@ const draw = () => {
       ],
       initialInterval: 200,
       controls: {
-        left: ["ArrowLeft", 37],
-        up: ["ArrowUp", 38],
-        right: ["ArrowRight", 39],
-        down: ["ArrowDown", 40]
+        left: ["ArrowLeft", "a", 37, 65],
+        up: ["ArrowUp", "w", 38, 87],
+        right: ["ArrowRight", "d", 39, 68],
+        down: ["ArrowDown", "s", 40, 83]
       },
       startDirection: "RIGHT",
       TILESIZE: 20
@@ -88,16 +88,16 @@ const draw = () => {
       key = e.key || e.keyIdentifier || e.keyCode;
       switch (snake && true) {
         case !!~left.indexOf(key) && snake.direction !== "RIGHT":
-          snake.setDirection("LEFT").moveSnake();
+          snake.setDirection("LEFT").move();
           break;
         case !!~up.indexOf(key) && snake.direction !== "DOWN":
-          snake.setDirection("UP").moveSnake();
+          snake.setDirection("UP").move();
           break;
         case !!~right.indexOf(key) && snake.direction !== "LEFT":
-          snake.setDirection("RIGHT").moveSnake();
+          snake.setDirection("RIGHT").move();
           break;
         case !!~down.indexOf(key) && snake.direction !== "UP":
-          snake.setDirection("DOWN").moveSnake();
+          snake.setDirection("DOWN").move();
           break;
       }
     };
@@ -116,7 +116,7 @@ const draw = () => {
       const getMatches = function() {
         let randX = getRandom(0, GRIDSIZE_X);
         let randY = getRandom(0, GRIDSIZE_Y);
-        if (isMatch({ posX: randX, posY: randY }, snake.snakeBody)) {
+        if (isMatch({ posX: randX, posY: randY }, snake.shape)) {
           return getMatches();
         }
         return [randX, randY];
@@ -124,15 +124,15 @@ const draw = () => {
       return getMatches();
     };
 
-    Apple.prototype.drawApple = function() {
+    Apple.prototype.render = function() {
       drawRectangle(this.posX, this.posY, TILESIZE, appleFill);
     };
 
     const Snake = function() {
-      this.snakeBody = snakeInitialState.map(item => new Tile(item.x, item.y));
+      this.shape = snakeInitialState.map(item => new Tile(item.x, item.y));
       this.direction = startDirection;
 
-      this.initSnake = function() {
+      this.init = function() {
         console.log("snake initialized!");
         window.addEventListener(
           "keydown",
@@ -142,12 +142,12 @@ const draw = () => {
           },
           false
         );
-        for (let item of this.snakeBody) {
+        for (let item of this.shape) {
           drawRectangle(item.posX, item.posY, TILESIZE, snakeFill);
         }
         spawnApple();
         currentInterval = initialInterval;
-        tick = setInterval(this.moveSnake.bind(this), currentInterval);
+        tick = setInterval(this.move.bind(this), currentInterval);
       };
 
       this.setDirection = function(direction) {
@@ -155,8 +155,8 @@ const draw = () => {
         return this;
       };
 
-      this.moveSnake = function() {
-        let { posX: newX, posY: newY } = this.snakeBody[0];
+      this.move = function() {
+        let { posX: newX, posY: newY } = this.shape[0];
         switch (this.direction) {
           case "LEFT":
             newX -= 1;
@@ -171,10 +171,10 @@ const draw = () => {
             newY += 1;
             break;
         }
-        this.redrawSnake(newX, newY);
+        this.redraw(newX, newY);
       };
 
-      this.redrawSnake = function(x, y) {
+      this.redraw = function(x, y) {
         const tileToAdd = new Tile(x, y);
         const isCollision = detectCollision(
           tileToAdd.posX,
@@ -182,11 +182,11 @@ const draw = () => {
           this
         );
         if (isCollision) {
-          // snake does crash to itself or to edges of canvas
+          // snake does crash to itself or to the edges of canvas
           playSound("snake_crash");
           clearInterval(tick);
         } else {
-          this.snakeBody.unshift(tileToAdd);
+          this.shape.unshift(tileToAdd);
           drawRectangle(tileToAdd.posX, tileToAdd.posY, TILESIZE, snakeFill);
           if (isMatch(tileToAdd, currentApple)) {
             // snake eats an apple
@@ -194,7 +194,7 @@ const draw = () => {
             currentInterval -= (currentInterval / 100) * 3;
             spawnApple();
           } else {
-            const tileToRemove = this.snakeBody.pop();
+            const tileToRemove = this.shape.pop();
             clearRectangle(tileToRemove.posX, tileToRemove.posY, TILESIZE);
           }
         }
@@ -204,24 +204,23 @@ const draw = () => {
     this.spawnApple = function() {
       currentApple = null;
       currentApple = new Apple();
-      currentApple.drawApple();
+      currentApple.render();
     };
 
     this.detectCollision = function(x, y, context) {
-      // console.log({ x, y, context });
       if (
         x < 0 ||
         y < 0 ||
         x > LIMIT_X ||
         y > LIMIT_Y ||
-        isMatch({ posX: x, posY: y }, context.snakeBody)
+        isMatch({ posX: x, posY: y }, context.shape)
       ) {
         return true;
       }
     };
 
     const snake = new Snake();
-    snake.initSnake();
+    snake.init();
   }
 };
 
