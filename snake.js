@@ -7,8 +7,6 @@ const snakeGame = () => {
     // GLOBAL VARIABLES
     const primary = primaryCanvas.getContext("2d");
     const secondary = secondaryCanvas.getContext("2d");
-    const HEIGHT = primaryCanvas.height;
-    const WIDTH = primaryCanvas.width;
 
     let tick;
     let currentApple;
@@ -54,6 +52,16 @@ const snakeGame = () => {
       TILESIZE
     } = config;
 
+    // TODO try to make it more DRY, you are probably getting / setting width & height abundantly.
+    const roundCanvasSize = ((canvas, tile) => {
+      let { height, width } = canvas;
+      let moduloX = width % tile;
+      let moduloY = height % tile;
+      canvas.height -= moduloY;
+      canvas.width -= moduloX;
+    })(primaryCanvas, TILESIZE);
+
+    const { height: HEIGHT, width: WIDTH } = primaryCanvas;
     const LIMIT_X = WIDTH / TILESIZE - 1;
     const LIMIT_Y = HEIGHT / TILESIZE - 1;
     const GRIDSIZE_X = WIDTH / TILESIZE;
