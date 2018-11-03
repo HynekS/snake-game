@@ -1,0 +1,29 @@
+{
+  "name": "snake-game",
+  "version": "1.0.0",
+  "description": "a simple game where snake eats apples",
+  "main": "index.html",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HynekS/snake-game.git"
+  },
+  "keywords": [
+    "game",
+    "8-bit",
+    "javascript",
+    "canvas",
+    "snake"
+  ],
+  "author": "HynekS",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HynekS/snake-game/issues"
+  },
+  "homepage": "https://github.com/HynekS/snake-game#readme",
+  "dependencies": {
+    "jest": "^23.6.0"
+  }
+}
