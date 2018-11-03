@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,26 +9,32 @@
     <script src="snake.js"></script>
     <style>
         body {
-            all: unset;
-            background-color:darkslategray;
+            background-color: darkslategray;
+            height: 100vh;
+            margin: 0;
         }
-        canvas {
-            background-color:antiquewhite;
+        canvas {     
+            display: block;
+            margin: 0 auto;
+        }
+        .canvas_primary {
+            background-color: antiquewhite;
+        }
+        .container {
             position: relative;
             top: 45%;
             transform: translateY(-50%);
         }
-        .container {
-            height: 100vh;
-            text-align: center;
-        }
     </style>
 </head>
+
 <body>
     <audio id="snake_apple-eaten" src="sounds/sfx_sounds_powerup6.wav"></audio>
     <audio id="snake_crash" src="sounds/sfx_exp_cluster5.wav"></audio>
     <div class="container">
-        <canvas id="myCanvas" height="400px" width="400px"></canvas>
+        <canvas id="secondaryCanvas" height="80px" width="400px"></canvas>
+        <canvas id="primaryCanvas" class="canvas_primary" height="400px" width="400px"></canvas>
     </div>
 </body>
+
 </html>

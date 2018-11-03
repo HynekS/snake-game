@@ -1,15 +1,19 @@
-const draw = () => {
-  const myCanvas = document.getElementById("myCanvas");
+const snakeGame = () => {
+  const canvas = document.createElement("canvas");
+  if (canvas.getContext) {
+    const primaryCanvas = document.getElementById("primaryCanvas");
+    const secondaryCanvas = document.getElementById("secondaryCanvas");
 
-  if (myCanvas.getContext) {
     // GLOBAL VARIABLES
-    const ctx = myCanvas.getContext("2d");
-    const HEIGHT = myCanvas.height;
-    const WIDTH = myCanvas.width;
+    const primary = primaryCanvas.getContext("2d");
+    const secondary = secondaryCanvas.getContext("2d");
+    const HEIGHT = primaryCanvas.height;
+    const WIDTH = primaryCanvas.width;
 
     let tick;
     let currentApple;
     let currentInterval;
+    let score = 0;
 
     // CONFIG
     const config = {
@@ -29,6 +33,12 @@ const draw = () => {
         down: ["ArrowDown", "s", 40, 83]
       },
       startDirection: "RIGHT",
+      updateScore: () => {
+        score += 10;
+      },
+      updateVelocity: () => {
+        currentInterval -= (currentInterval / 100) * 3;
+      },
       TILESIZE: 20
     };
 
@@ -39,6 +49,8 @@ const draw = () => {
       initialInterval,
       controls,
       startDirection,
+      updateScore,
+      updateVelocity,
       TILESIZE
     } = config;
 
@@ -54,7 +66,6 @@ const draw = () => {
     // "candidate input is very hairy and needs to be refactored (in 2 of 3 cases they are actually separate coords, not an object.)"
     const isMatch = (candidate, current) => {
       let { posX: x, posY: y } = candidate;
-      console.log(x, y);
       if (Array.isArray(current)) {
         let match = current.filter(item => item.posX === x && item.posY === y);
         return !!match.length;
@@ -65,12 +76,30 @@ const draw = () => {
     };
 
     const drawRectangle = (posX, posY, dim = TILESIZE, fill) => {
-      ctx.fillStyle = fill;
-      ctx.fillRect(posX * TILESIZE, posY * TILESIZE, dim, dim);
+      primary.fillStyle = fill;
+      primary.fillRect(posX * TILESIZE, posY * TILESIZE, dim, dim);
     };
 
     const clearRectangle = (posX, posY, dim = TILESIZE) => {
-      ctx.clearRect(posX * TILESIZE, posY * TILESIZE, dim, dim);
+      primary.clearRect(posX * TILESIZE, posY * TILESIZE, dim, dim);
+    };
+
+    const spawnApple = () => {
+      currentApple = null;
+      currentApple = new Apple();
+      currentApple.render();
+    };
+
+    detectCollision = function(x, y, context) {
+      if (
+        x < 0 ||
+        y < 0 ||
+        x > LIMIT_X ||
+        y > LIMIT_Y ||
+        isMatch({ posX: x, posY: y }, context.shape)
+      ) {
+        return true;
+      }
     };
 
     const playSound = (sound, volume = 0.1) => {
@@ -82,11 +111,24 @@ const draw = () => {
       }
     };
 
+    const repaintScore = () => {
+      secondary.clearRect(0, 0, secondaryCanvas.width, secondaryCanvas.height);
+      secondary.textAlign = "right";
+      secondary.fillStyle = "white";
+      secondary.font = "bold 24px monospace";
+      secondary.fillText(
+        `score: ${String(score).padStart(3, " ")}`,
+        secondaryCanvas.width,
+        50
+      );
+    };
+
     // CONTROLS
     controlDirection = e => {
+      if (!snake) return;
       const { left, up, right, down } = controls;
       key = e.key || e.keyIdentifier || e.keyCode;
-      switch (snake && true) {
+      switch (true) {
         case !!~left.indexOf(key) && snake.direction !== "RIGHT":
           snake.setDirection("LEFT").move();
           break;
@@ -185,13 +227,17 @@ const draw = () => {
           // snake does crash to itself or to the edges of canvas
           playSound("snake_crash");
           clearInterval(tick);
+          snake = null;
         } else {
           this.shape.unshift(tileToAdd);
           drawRectangle(tileToAdd.posX, tileToAdd.posY, TILESIZE, snakeFill);
           if (isMatch(tileToAdd, currentApple)) {
             // snake eats an apple
             playSound("snake_apple-eaten");
-            currentInterval -= (currentInterval / 100) * 3;
+            // TODO Merge update and repaint score into one function
+            updateScore();
+            repaintScore();
+            updateVelocity();
             spawnApple();
           } else {
             const tileToRemove = this.shape.pop();
@@ -201,27 +247,9 @@ const draw = () => {
       };
     };
 
-    this.spawnApple = function() {
-      currentApple = null;
-      currentApple = new Apple();
-      currentApple.render();
-    };
-
-    this.detectCollision = function(x, y, context) {
-      if (
-        x < 0 ||
-        y < 0 ||
-        x > LIMIT_X ||
-        y > LIMIT_Y ||
-        isMatch({ posX: x, posY: y }, context.shape)
-      ) {
-        return true;
-      }
-    };
-
-    const snake = new Snake();
+    let snake = new Snake();
     snake.init();
   }
 };
 
-window.addEventListener("load", () => draw(), false);
+window.addEventListener("load", () => snakeGame(), false);
