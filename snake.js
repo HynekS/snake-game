@@ -31,11 +31,11 @@ const snakeGame = () => {
         down: ["ArrowDown", "s", 40, 83]
       },
       startDirection: "RIGHT",
-      updateScore: () => {
-        score += 10;
+      updateScore: (currentScore) => {
+        currentScore += 10;
       },
-      updateVelocity: () => {
-        currentInterval -= (currentInterval / 100) * 3;
+      updateVelocity: (currentVelocity) => {
+        currentVelocity -= (currentVelocity / 100) * 3;
       },
       TILESIZE: 20
     };
@@ -243,9 +243,9 @@ const snakeGame = () => {
             // snake eats an apple
             playSound("snake_apple-eaten");
             // TODO Merge update and repaint score into one function
-            updateScore();
+            updateScore(score);
             repaintScore();
-            updateVelocity();
+            updateVelocity(currentInterval);
             spawnApple();
           } else {
             const tileToRemove = this.shape.pop();
